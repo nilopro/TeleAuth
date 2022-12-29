@@ -1,7 +1,7 @@
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, CallbackContext
 from telegram import Update, ParseMode
 from dotenv import load_dotenv
-from Auth import Auth
+from teleauth import Auth
 import os
 import logging
 

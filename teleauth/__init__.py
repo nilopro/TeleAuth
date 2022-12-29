@@ -1,5 +1,5 @@
 """
-The `Auth` package provides a flexible and easy-to-use authorization system for Telegram bots.
+The `teleauth` package provides a flexible and easy-to-use authorization system for Telegram bots.
 
 It allows you to authenticate users, authorize access for a certain amount of time, and check if a user is an admin. 
 
@@ -8,11 +8,11 @@ The package also allows you to choose between using SQLite or JSON to store the 
 Examples
 --------
 
-Creating a simple Telegram bot using the `Auth` package:
+Creating a simple Telegram bot using the teleauth package:
 
 ```python
 from telegram.ext import Updater, CommandHandler
-from Auth import Auth
+from teleauth import Auth
 
 # Initialize the authorization system with a list of authorized admin IDs
 auth = Auth([123456789])
