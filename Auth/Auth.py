@@ -1,6 +1,6 @@
 from typing import List, Tuple
 from prettytable import PrettyTable
-from Auth.Store import IStore, SQLiteStore, JSONStore, StoreType, STORE_CLASSES
+from Auth.store import IStore, SQLiteStore, JSONStore, StoreType, STORE_CLASSES
 from datetime import datetime
 from enum import Enum
 
