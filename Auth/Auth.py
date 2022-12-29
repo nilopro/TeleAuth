@@ -58,3 +58,9 @@ class Auth:
             minutes = (remaining.seconds % 3600) // 60
 
         return days, hours, minutes
+
+    def _insert_user(self, user_id: int, expires: datetime):
+        self.store.insert_user(user_id, expires)
+    
+    def _update_user(self, user_id: int, expires: datetime):
+        self.store.update_user(user_id, expires)

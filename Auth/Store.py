@@ -44,6 +44,13 @@ class IStore(ABC):
     def get_authorized_users(self) -> List[Tuple[int, datetime]]:
         pass
 
+    @abstractmethod
+    def insert_user(self, user_id: int, expires: datetime):
+        pass
+    
+    @abstractmethod
+    def update_user(self, user_id: int, expires: datetime):
+        pass
     
 
 class SQLiteStore(IStore):
@@ -66,22 +73,17 @@ class SQLiteStore(IStore):
         if self.is_admin(user_id):
             return True
 
-
         self.cursor.execute("SELECT * FROM users WHERE user_id=? AND expires >?", (user_id, datetime.now()))
         result = self.cursor.fetchone()
         return result is not None
     
     def authorize_user(self, user_id: int, days: int, hours: int):
-        self.cursor.execute("SELECT * FROM users WHERE user_id=?", (user_id,))
-        result = self.cursor.fetchone()
-        if result is not None:
-            # Update the expiration date if the user already exists
-            expires = datetime.now() + timedelta(days=days, hours=hours)
-            self.cursor.execute("UPDATE users SET expires=? WHERE user_id=?", (expires, user_id))
+        expires = datetime.now() + timedelta(days=days, hours=hours)
+        user = self.get_authorized_user()
+        if user is None:
+            self.insert_user(user_id, expires)
         else:
-            # Insert a new user if it does not exist
-            expires = datetime.now() + timedelta(days=days, hours=hours)
-            self.cursor.execute("INSERT INTO users (user_id, expires) VALUES (?, ?)", (user_id, expires))
+            self.update_user(user_id, expires)
         self.conn.commit()
     
     def revoke_access(self, user_id: int):
@@ -97,6 +99,12 @@ class SQLiteStore(IStore):
         self.cursor.execute("SELECT user_id, expires FROM users ORDER BY expires ASC")
         rows = self.cursor.fetchall()
         return [(row[0], row[1]) for row in rows]
+
+    def insert_user(self, user_id: int, expires: datetime):
+        self.cursor.execute("INSERT INTO users (user_id, expires) VALUES (?, ?)", (user_id, expires))
+    
+    def update_user(self, user_id: int, expires: datetime):
+        self.cursor.execute("UPDATE users SET expires=? WHERE user_id=?", (expires, user_id))
         
 
 
@@ -128,8 +136,8 @@ class JSONStore(IStore):
         return user_id in self.store and self.store[user_id]["expires"] > datetime.now()
     
     def authorize_user(self, user_id: int, days: int, hours: int):
-        expires = datetime.now() + timedelta(days=days, hours=hours)
-        self.store[user_id] = {"expires": expires}
+        expires = datetime.now() + timedelta(days=days, hours=hours)  
+        self.update_user(user_id, expires)
     
     def revoke_access(self, user_id: int):
         if user_id in self.store:
@@ -140,7 +148,11 @@ class JSONStore(IStore):
             return (user_id, self.data[user_id]['expires'])
         return None
 
-    
     def get_authorized_users(self) -> List[Tuple[int, datetime]]:
         return [(user_id, datetime.fromisoformat(self.store[user_id]["expires"])) for user_id in self.store]
 
+    def insert_user(self, user_id: int, expires: datetime):
+        self.store[user_id] = {"expires": expires.isoformat()}
+    
+    def update_user(self, user_id: int, expires: datetime):
+        self.insert_user(user_id, expires)
