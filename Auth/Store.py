@@ -54,8 +54,9 @@ class IStore(ABC):
     
 
 class SQLiteStore(IStore):
+    
     def __init__(self, authorized_admin_ids: List[int]):
-        STORE_CLASSES[StoreType.SQLITE] = SQLiteStore
+        
 
         self.authorized_admin_ids = authorized_admin_ids
         self.conn = sqlite3.connect("users.db", check_same_thread=False,
@@ -79,7 +80,7 @@ class SQLiteStore(IStore):
     
     def authorize_user(self, user_id: int, days: int, hours: int):
         expires = datetime.now() + timedelta(days=days, hours=hours)
-        user = self.get_authorized_user()
+        user = self.get_authorized_user(user_id)
         if user is None:
             self.insert_user(user_id, expires)
         else:
@@ -144,8 +145,8 @@ class JSONStore(IStore):
             del self.store[user_id]
 
     def get_authorized_user(self, user_id: int) -> Tuple[int, datetime]:
-        if user_id in self.data:
-            return (user_id, self.data[user_id]['expires'])
+        if user_id in self.store:
+            return (user_id, self.store[user_id]['expires'])
         return None
 
     def get_authorized_users(self) -> List[Tuple[int, datetime]]:
@@ -156,3 +157,9 @@ class JSONStore(IStore):
     
     def update_user(self, user_id: int, expires: datetime):
         self.insert_user(user_id, expires)
+        
+
+
+# add support for each StoreType
+STORE_CLASSES[StoreType.SQLITE] = SQLiteStore
+STORE_CLASSES[StoreType.JSON] = JSONStore
