@@ -3,7 +3,13 @@ from datetime import datetime, timedelta
 import json
 from typing import List, Tuple
 import sqlite3
+from enum import Enum
 
+STORE_CLASSES = {}
+
+class StoreType(Enum):
+    SQLITE = 'SQLITE'
+    JSON = 'JSON'
 
 class IStore(ABC):
     @abstractmethod
@@ -42,6 +48,8 @@ class IStore(ABC):
 
 class SQLiteStore(IStore):
     def __init__(self, authorized_admin_ids: List[int]):
+        STORE_CLASSES[StoreType.SQLITE] = SQLiteStore
+
         self.authorized_admin_ids = authorized_admin_ids
         self.conn = sqlite3.connect("users.db", check_same_thread=False,
                                     detect_types=sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES)
@@ -94,6 +102,8 @@ class SQLiteStore(IStore):
 
 class JSONStore(IStore):
     def __init__(self, authorized_admin_ids: List[int]):
+        STORE_CLASSES[StoreType.JSON] = SQLiteStore
+
         self.authorized_admin_ids = authorized_admin_ids
         self.store = {}
         try:
