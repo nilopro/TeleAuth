@@ -121,7 +121,7 @@ class SQLiteStore(IStore):
         
 
         self.authorized_admin_ids = authorized_admin_ids
-        self.conn = sqlite3.connect("users.db", check_same_thread=False,
+        self.conn = sqlite3.connect("teleauth.db", check_same_thread=False,
                                     detect_types=sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES)
         self.cursor = self.conn.cursor()
         self.cursor.execute("CREATE TABLE IF NOT EXISTS users (user_id INTEGER PRIMARY KEY, expires TIMESTAMP)")
@@ -178,15 +178,15 @@ class JSONStore(IStore):
         self.authorized_admin_ids = authorized_admin_ids
         self.store = {}
         try:
-            with open("users.json", "r") as f:
+            with open("teleauth.json", "r") as f:
                 self.store = json.load(f)
         except FileNotFoundError:
             # Create an empty JSON file if it does not exist
-            with open("users.json", "w") as f:
+            with open("teleauth.json", "w") as f:
                 json.dump({}, f)
     
     def close(self):
-        with open("users.json", "w") as f:
+        with open("teleauth.json", "w") as f:
             json.dump(self.store, f)
 
     def is_admin(self, user_id: int) -> bool:
