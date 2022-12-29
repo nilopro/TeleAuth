@@ -10,7 +10,7 @@ def create_store(store_type: StoreType, authorized_admin_ids: List[int]) -> ISto
         raise ValueError(f"Invalid store type: {store_type}")
     return store_class(authorized_admin_ids)
 
-class Authentication:
+class Auth:
     def __init__(self, authorized_admin_ids: List[int], store_type: StoreType=StoreType.SQLITE):
         self.store = create_store(store_type, authorized_admin_ids)
     
