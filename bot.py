@@ -1,11 +1,7 @@
 import logging
 import os
-import sqlite3
-import datetime
-from typing import List, Tuple
-from prettytable import PrettyTable
 from dotenv import load_dotenv
-from datetime import datetime, timedelta
+from Auth import Auth, StoreType
 
 from telegram import (
     Update,
@@ -27,86 +23,6 @@ load_dotenv()
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 ADMINS = list(map(int, os.environ["ADMINS"].split(",")))
 
-class Authentication:
-    def __init__(self, authorized_admin_ids: List[int]):
-        self.authorized_admin_ids = authorized_admin_ids
-        self.conn = sqlite3.connect("users.db", check_same_thread=False,
-                                    detect_types=sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES)
-        self.cursor = self.conn.cursor()
-        self.cursor.execute("CREATE TABLE IF NOT EXISTS users (user_id INTEGER PRIMARY KEY, expires TIMESTAMP)")
-    
-    def close(self):
-        self.conn.close()
-
-    def is_admin(self, user_id: int) -> bool:
-        return user_id in self.authorized_admin_ids
-
-    def is_authenticated(self, user_id: int) -> bool:
-        if self.is_admin(user_id):
-            return True
-
-        self.cursor.execute("SELECT * FROM users WHERE user_id=?", (user_id,))
-        result = self.cursor.fetchone()
-        if result is not None:
-            user_id, expires = result
-            if expires > datetime.now():
-                return True
-
-        return False
-
-    def remaining_time(self, user_id: int) -> Tuple[int, int, int]:
-        self.cursor.execute("SELECT expires FROM users WHERE user_id=?", (user_id,))
-        result = self.cursor.fetchone()
-        if result is not None:
-            expires = result[0]
-            remaining = expires - datetime.now()
-            days = remaining.days
-            hours = remaining.seconds // 3600
-            minutes = (remaining.seconds % 3600) // 60
-            return days, hours, minutes
-        else:
-            return 0, 0, 0
-    
-    def authorize_user(self, user_id: int, days: int, hours: int):
-        self.cursor.execute("SELECT * FROM users WHERE user_id=?", (user_id,))
-        result = self.cursor.fetchone()
-        if result is not None:
-            # Update the expiration date if the user already exists
-            expires = datetime.now() + timedelta(days=days, hours=hours)
-            self.cursor.execute("UPDATE users SET expires=? WHERE user_id=?", (expires, user_id))
-        else:
-            # Insert a new user if it does not exist
-            expires = datetime.now() + timedelta(days=days, hours=hours)
-            self.cursor.execute("INSERT INTO users (user_id, expires) VALUES (?, ?)", (user_id, expires))
-        self.conn.commit()
-    
-    def revoke_access(self, user_id: int):
-        self.cursor.execute("DELETE FROM users WHERE user_id=?", (user_id,))
-        self.conn.commit()
-    
-    def get_authorized_users(self) -> List[Tuple[int, datetime]]:
-        self.cursor.execute("SELECT user_id, expires FROM users ORDER BY expires ASC")
-        rows = self.cursor.fetchall()
-        return [(row[0], row[1]) for row in rows]
-    
-    def get_authorized_users_table(self, datetime_format:str="%d/%m/%Y %H:%M") -> str:
-        users = self.get_authorized_users()
-        
-        table = PrettyTable(border=False, padding_width=0, preserve_internal_border=True)
-        table.field_names = ["USER ID", "EXPIRA EM"]
-
-        for user in users:
-            user_id, expires = user
-            expires_str = expires.strftime(datetime_format)
-            if expires < datetime.now():
-                # Highlight expired users
-                table.add_row([f"{user_id}", f"{expires_str} ⚠️"])
-            else:
-                table.add_row([user_id, expires_str])
-        
-        return str(table)
-
-        
 # Constants
 class AuthenticationCallbacks:
     MENU = "AUTHORIZATION"
@@ -166,7 +82,7 @@ def auth_callback(update: Update, context):
     user_id = update.effective_user.id
     
     # Check if the user has admin privileges
-    if user_id not in auth.authorized_admin_ids:
+    if not auth.is_admin(user_id):
         # If the user does not have admin privileges, do nothing
         return
     
@@ -197,9 +113,10 @@ def message(update: Update, context):
     user_id = update.effective_user.id
     
     # Check if the user has admin privileges
-    if user_id not in auth.authorized_admin_ids:
+    if not auth.is_admin(user_id):
         # If the user does not have admin privileges, do nothing
         return
+    
     
     # Get the user's input
     input_str = update.message.text
@@ -250,7 +167,7 @@ logging.basicConfig(format="%(asctime)s - %(name)s - %(levelname)s - %(message)s
 updater = Updater(BOT_TOKEN, use_context=True)
 
 # Set up the authentication instance
-auth = Authentication(ADMINS)
+auth = Auth(ADMINS, store_type=StoreType.JSON)
 
 # Get the dispatcher
 dispatcher = updater.dispatcher
