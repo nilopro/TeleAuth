@@ -29,10 +29,10 @@ class Auth:
     def revoke_access(self, user_id: int):
         self.store.revoke_access(user_id)
     
-    def get_authorized_users_table(self, datetime_format:str="%d/%m/%Y %H:%M") -> str:
+    def get_authorized_users_table(self, field_names:List[str]=["USER ID", "EXPIRES"], datetime_format:str="%d/%m/%Y %H:%M") -> str:
         users = self.store.get_authorized_users()
         table = PrettyTable(border=False, padding_width=0, preserve_internal_border=True)
-        table.field_names = ["USER ID", "EXPIRA EM"]
+        table.field_names = field_names
 
         for user in users:
             user_id, expires = user
