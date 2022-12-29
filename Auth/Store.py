@@ -15,6 +15,10 @@ class IStore(ABC):
         pass
 
     @abstractmethod
+    def is_admin(self, user_id: int) -> bool:
+        pass
+
+    @abstractmethod
     def is_authenticated(self, user_id: int) -> bool:
         pass
 
@@ -27,8 +31,14 @@ class IStore(ABC):
         pass
 
     @abstractmethod
+    def get_authorized_user(self, user_id: int) -> Tuple[int, datetime]:
+        pass
+
+    @abstractmethod
     def get_authorized_users(self) -> List[Tuple[int, datetime]]:
         pass
+
+    
 
 class SQLiteStore(IStore):
     def __init__(self, authorized_admin_ids: List[int]):
@@ -40,10 +50,14 @@ class SQLiteStore(IStore):
     
     def close(self):
         self.conn.close()
+
+    def is_admin(self, user_id: int) -> bool:
+        return user_id in self.authorized_admin_ids
     
     def is_authenticated(self, user_id: int) -> bool:
-        if user_id in self.authorized_admin_ids:
+        if self.is_admin(user_id):
             return True
+
 
         self.cursor.execute("SELECT * FROM users WHERE user_id=? AND expires >?", (user_id, datetime.now()))
         result = self.cursor.fetchone()
@@ -65,11 +79,17 @@ class SQLiteStore(IStore):
     def revoke_access(self, user_id: int):
         self.cursor.execute("DELETE FROM users WHERE user_id=?", (user_id,))
         self.conn.commit()
+
+    def get_authorized_user(self, user_id: int) -> Tuple[int, datetime]:
+        self.cursor.execute("SELECT * FROM users WHERE user_id=?", (user_id,))
+        result = self.cursor.fetchone()
+        return result
     
     def get_authorized_users(self) -> List[Tuple[int, datetime]]:
         self.cursor.execute("SELECT user_id, expires FROM users ORDER BY expires ASC")
         rows = self.cursor.fetchall()
         return [(row[0], row[1]) for row in rows]
+        
 
 
 class JSONStore(IStore):
@@ -87,9 +107,12 @@ class JSONStore(IStore):
     def close(self):
         with open("users.json", "w") as f:
             json.dump(self.store, f)
+
+    def is_admin(self, user_id: int) -> bool:
+        return user_id in self.authorized_admin_ids
     
     def is_authenticated(self, user_id: int) -> bool:
-        if user_id in self.authorized_admin_ids:
+        if self.is_admin(user_id):
             return True
 
         return user_id in self.store and self.store[user_id]["expires"] > datetime.now()
@@ -101,6 +124,12 @@ class JSONStore(IStore):
     def revoke_access(self, user_id: int):
         if user_id in self.store:
             del self.store[user_id]
+
+    def get_authorized_user(self, user_id: int) -> Tuple[int, datetime]:
+        if user_id in self.data:
+            return (user_id, self.data[user_id]['expires'])
+        return None
+
     
     def get_authorized_users(self) -> List[Tuple[int, datetime]]:
         return [(user_id, datetime.fromisoformat(self.store[user_id]["expires"])) for user_id in self.store]
