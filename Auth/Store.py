@@ -141,8 +141,9 @@ class JSONStore(IStore):
         self.update_user(user_id, expires)
     
     def revoke_access(self, user_id: int):
-        if user_id in self.store:
+        if user_id in self.store.keys():
             del self.store[user_id]
+            self.close()
 
     def get_authorized_user(self, user_id: int) -> Tuple[int, datetime]:
         if user_id in self.store:
@@ -154,6 +155,7 @@ class JSONStore(IStore):
 
     def insert_user(self, user_id: int, expires: datetime):
         self.store[user_id] = {"expires": expires.isoformat()}
+        self.close()
     
     def update_user(self, user_id: int, expires: datetime):
         self.insert_user(user_id, expires)
