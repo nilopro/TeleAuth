@@ -8,48 +8,110 @@ from enum import Enum
 STORE_CLASSES = {}
 
 class StoreType(Enum):
+    """
+    An enum representing the types of stores that can be used for storing the authorized users.
+    """
     SQLITE = 'SQLITE'
     JSON = 'JSON'
 
 class IStore(ABC):
+    """
+    Abstract base class for stores.
+    """
+
     @abstractmethod
     def __init__(self, authorized_admin_ids: List[int]):
+        """
+        Initializes a new instance of the IStore class.
+        
+        :param authorized_admin_ids: List of user ids that are authorized to use the bot as admins.
+        """
         pass
 
     @abstractmethod
     def close(self):
+        """
+        Closes the store, releasing any resources it may be holding.
+        """
         pass
 
     @abstractmethod
     def is_admin(self, user_id: int) -> bool:
+        """
+        Determines whether the specified user is an admin.
+        
+        :param user_id: The user id to check.
+        :return: True if the user is an admin, False otherwise.
+        """
         pass
 
     @abstractmethod
     def is_authenticated(self, user_id: int) -> bool:
+        """
+        Determines whether the specified user is authenticated.
+        
+        :param user_id: The user id to check.
+        :return: True if the user is authenticated, False otherwise.
+        """
         pass
 
     @abstractmethod
     def authorize_user(self, user_id: int, days: int, hours: int):
+        """
+        Authorizes the specified user.
+        
+        :param user_id: The user id to authorize.
+        :param days: The number of days the user will be authorized for.
+        :param hours: The number of hours the user will be authorized for.
+        """
         pass
 
     @abstractmethod
     def revoke_access(self, user_id: int):
+        """
+        Revoke access to the user with the specified ID.
+        
+        :param user_id: The ID of the user to revoke access from.
+        """
         pass
 
     @abstractmethod
     def get_authorized_user(self, user_id: int) -> Tuple[int, datetime]:
+        """
+        Get the authorized user with the specified ID.
+        
+        :param user_id: The ID of the user to get.
+        :return: A tuple containing the user ID and the expiration date of the user's access.
+        """
         pass
 
     @abstractmethod
     def get_authorized_users(self) -> List[Tuple[int, datetime]]:
+        """
+        Get a list of all authorized users.
+        
+        :return: A list of tuples containing the user IDs and expiration dates of all authorized users.
+        """
         pass
 
     @abstractmethod
     def insert_user(self, user_id: int, expires: datetime):
+        """
+        Insert a new authorized user into the store.
+        
+        :param user_id: The ID of the user to insert.
+        :param expires: The expiration date of the user's access.
+        """
         pass
     
     @abstractmethod
     def update_user(self, user_id: int, expires: datetime):
+        """
+        Update the expiration date of an authorized user.
+        
+        :param user_id: The ID of the user to update.
+        :param expires: The new expiration date of the user's access.
+        """
         pass
     
 
