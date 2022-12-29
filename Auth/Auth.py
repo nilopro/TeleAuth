@@ -1,11 +1,22 @@
 from typing import List, Tuple
 from prettytable import PrettyTable
-from Auth.Store import IStore
+from Auth.Store import IStore, SQLiteStore, JSONStore
 from datetime import datetime
+from enum import Enum
+
+class StoreType(Enum):
+    SQLITE = 'SQLITE'
+    JSON = 'JSON'
+
+def create_store(store_type: StoreType, authorized_admin_ids: List[int]) -> IStore:
+    if store_type == StoreType.SQLITE:
+        return SQLiteStore(authorized_admin_ids)
+    elif store_type == StoreType.JSON:
+        return JSONStore(authorized_admin_ids)
 
 class Authentication:
-    def __init__(self, store: IStore):
-        self.store = store
+    def __init__(self, authorized_admin_ids: List[int], store_type: StoreType=StoreType.SQLITE):
+        self.store = create_store(store_type, authorized_admin_ids)
     
     def close(self):
         self.store.close()
