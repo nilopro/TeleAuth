@@ -173,7 +173,6 @@ class SQLiteStore(IStore):
 
 class JSONStore(IStore):
     def __init__(self, authorized_admin_ids: List[int]):
-        STORE_CLASSES[StoreType.JSON] = SQLiteStore
 
         self.authorized_admin_ids = authorized_admin_ids
         self.store = {}
