@@ -20,11 +20,12 @@ class IStore(ABC):
     """
 
     @abstractmethod
-    def __init__(self, authorized_admin_ids: List[int]):
+    def __init__(self, authorized_admin_ids: List[int], filename:str="teleauth"):
         """
         Initializes a new instance of the IStore class.
         
         :param authorized_admin_ids: List of user ids that are authorized to use the bot as admins.
+        :param filename: storage filename
         """
         pass
 
@@ -117,11 +118,11 @@ class IStore(ABC):
 
 class SQLiteStore(IStore):
     
-    def __init__(self, authorized_admin_ids: List[int]):
+    def __init__(self, authorized_admin_ids: List[int], filename:str="teleauth"):
         
-
+        self.filename = filename
         self.authorized_admin_ids = authorized_admin_ids
-        self.conn = sqlite3.connect("teleauth.db", check_same_thread=False,
+        self.conn = sqlite3.connect(f"{self.filename}.db", check_same_thread=False,
                                     detect_types=sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES)
         self.cursor = self.conn.cursor()
         self.cursor.execute("CREATE TABLE IF NOT EXISTS users (user_id INTEGER PRIMARY KEY, expires TIMESTAMP)")
@@ -172,20 +173,20 @@ class SQLiteStore(IStore):
 
 
 class JSONStore(IStore):
-    def __init__(self, authorized_admin_ids: List[int]):
-
+    def __init__(self, authorized_admin_ids: List[int], filename:str="teleauth"):
+        self.filename = filename
         self.authorized_admin_ids = authorized_admin_ids
         self.store = {}
         try:
-            with open("teleauth.json", "r") as f:
+            with open(f"{self.filename}.json", "r") as f:
                 self.store = json.load(f)
         except FileNotFoundError:
             # Create an empty JSON file if it does not exist
-            with open("teleauth.json", "w") as f:
+            with open(f"{self.filename}.json", "w") as f:
                 json.dump({}, f)
     
     def close(self):
-        with open("teleauth.json", "w") as f:
+        with open(f"{self.filename}.json", "w") as f:
             json.dump(self.store, f)
 
     def is_admin(self, user_id: int) -> bool:
