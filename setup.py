@@ -9,7 +9,6 @@ setup(
     author='nilopro',
     author_email='menezesdev@pm.me',
     url='https://github.com/nilopro/teleauth',
-    download_url='https://github.com/nilopro/teleauth/archive/v1.0.1.tar.gz',
     keywords=['telegram', 'authentication', 'bot'],
     classifiers=[
         'Development Status :: 5 - Production/Stable',
