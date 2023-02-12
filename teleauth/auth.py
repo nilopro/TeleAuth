@@ -54,6 +54,14 @@ class Auth:
         param user_id: The user id to authorize
         """
         self.store.authorize_admin(user_id)
+
+    def revoke_admin(self, user_id):
+        """
+        Revokes administrator access from a user.
+        
+        param user_id: The ID of the user to revoke access from.
+        """
+        self.store.revoke_admin(user_id)
     
     def is_authenticated(self, user_id: int) -> bool:
         """

@@ -61,7 +61,7 @@ class IStore(ABC):
         param user_id: The ID of the user to revoke access from.
         """
         if self.is_admin(user_id):
-            self.admins.remove(user_id)
+            self.authorized_admin_ids.remove(user_id)
     
     @abstractmethod
     def is_authenticated(self, user_id: int) -> bool:
