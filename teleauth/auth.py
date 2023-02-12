@@ -23,8 +23,11 @@ class Auth:
     :param authorized_admin_ids: A list of user IDs of authorized admins.
     :param store_type: The store type to use (either `SQLITE` or `JSON`). Defaults to `SQLITE`.
     """
-    def __init__(self, authorized_admin_ids: List[int], store_type: StoreType=StoreType.SQLITE):
+    def __init__(self, owner: int, authorized_admin_ids: List[int], store_type: StoreType=StoreType.SQLITE):
+        self.owner = owner
         self.store = create_store(store_type, authorized_admin_ids)
+
+
     
     def close(self):
         """
@@ -39,7 +42,18 @@ class Auth:
         :param user_id: The user ID to check.
         :return: True if the user is an authorized admin, False otherwise.
         """
-        return self.store.is_admin(user_id)
+        return self.is_owner(user_id) or self.store.is_admin(user_id)
+
+    def is_owner(self, user_id) -> bool:
+        return self.owner == user_id
+
+    def authorize_admin(self, user_id):
+        """
+        Authorize a user as an administrator.
+        
+        param user_id: The user id to authorize
+        """
+        self.store.authorize_admin(user_id)
     
     def is_authenticated(self, user_id: int) -> bool:
         """
@@ -90,6 +104,23 @@ class Auth:
                 table.add_row([f"{user_id}", f"{expires_str} ⚠️"])
             else:
                 table.add_row([user_id, expires_str])
+        
+        return str(table)
+
+    def get_authorized_admins_table(self, field_names:List[str]=["USER ID"]) -> str:
+        """
+        Returns a prettytable string with all authorized admins.
+
+        :param field_names: The field names to be displayed in the table. Default: ["USER ID"]
+        :return: The table as a string
+        """
+
+        admins = self.store.authorized_admin_ids
+        table = PrettyTable(border=False, padding_width=0, preserve_internal_border=True)
+        table.field_names = field_names
+
+        for user_id in admins:
+            table.add_row([user_id])
         
         return str(table)
     

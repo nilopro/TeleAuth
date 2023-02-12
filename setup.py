@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='teleauth',
-    version='1.0.3',
+    version='1.1.0',
     description='A library for user authentication in Telegram bots',
     packages=find_packages(),
     install_requires=['prettytable'],

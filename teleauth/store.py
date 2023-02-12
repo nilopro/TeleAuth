@@ -27,7 +27,8 @@ class IStore(ABC):
         :param authorized_admin_ids: List of user ids that are authorized to use the bot as admins.
         :param filename: storage filename
         """
-        pass
+        self.filename = filename
+        self.authorized_admin_ids = authorized_admin_ids
 
     @abstractmethod
     def close(self):
@@ -36,7 +37,6 @@ class IStore(ABC):
         """
         pass
 
-    @abstractmethod
     def is_admin(self, user_id: int) -> bool:
         """
         Determines whether the specified user is an admin.
@@ -44,8 +44,25 @@ class IStore(ABC):
         :param user_id: The user id to check.
         :return: True if the user is an admin, False otherwise.
         """
-        pass
-
+        return user_id in self.authorized_admin_ids
+        
+    def authorize_admin(self, user_id):
+        """
+        Authorize a user as an administrator.
+        
+        param user_id: The user id to authorize
+        """
+        self.authorized_admin_ids.append(user_id)
+        
+    def revoke_admin(self, user_id):
+        """
+        Revokes administrator access from a user.
+        
+        param user_id: The ID of the user to revoke access from.
+        """
+        if self.is_admin(user_id):
+            self.admins.remove(user_id)
+    
     @abstractmethod
     def is_authenticated(self, user_id: int) -> bool:
         """
@@ -114,14 +131,12 @@ class IStore(ABC):
         :param expires: The new expiration date of the user's access.
         """
         pass
-    
+
 
 class SQLiteStore(IStore):
     
     def __init__(self, authorized_admin_ids: List[int], filename:str="teleauth"):
-        
-        self.filename = filename
-        self.authorized_admin_ids = authorized_admin_ids
+        super().__init__(authorized_admin_ids, filename)
         self.conn = sqlite3.connect(f"{self.filename}.db", check_same_thread=False,
                                     detect_types=sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES)
         self.cursor = self.conn.cursor()
@@ -129,9 +144,6 @@ class SQLiteStore(IStore):
     
     def close(self):
         self.conn.close()
-
-    def is_admin(self, user_id: int) -> bool:
-        return user_id in self.authorized_admin_ids
     
     def is_authenticated(self, user_id: int) -> bool:
         if self.is_admin(user_id):
@@ -174,8 +186,7 @@ class SQLiteStore(IStore):
 
 class JSONStore(IStore):
     def __init__(self, authorized_admin_ids: List[int], filename:str="teleauth"):
-        self.filename = filename
-        self.authorized_admin_ids = authorized_admin_ids
+        super().__init__(authorized_admin_ids, filename)
         self.store = {}
         try:
             with open(f"{self.filename}.json", "r") as f:
@@ -188,9 +199,6 @@ class JSONStore(IStore):
     def close(self):
         with open(f"{self.filename}.json", "w") as f:
             json.dump(self.store, f)
-
-    def is_admin(self, user_id: int) -> bool:
-        return user_id in self.authorized_admin_ids
     
     def is_authenticated(self, user_id: int) -> bool:
         if self.is_admin(user_id):
